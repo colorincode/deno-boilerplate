@@ -42,3 +42,10 @@
     - clears all files from both dist and prod folders
 
         ```deno task clean```
+
+
+### Rough Roadmap/TODO:
+
+- Change the linting to ESLINT or something other than biome
+- Add in speed and performance enhancements to build
+- Add in a deno CI workflow 

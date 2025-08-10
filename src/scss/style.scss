@@ -68,7 +68,20 @@ main {
     text-transform: capitalize;
   }
 }
-// .outer__wrapper {
-//   visibility: hidden;
-//   opacity: 0;
-// }
+
+.global__headerwrapper {
+  position: relative;
+  display: flex;
+  flex: 1 1 auto;
+  width: 100%;
+  margin: auto 20px;
+  flex-direction: row;
+}
+.global__headerwrapper--logo {
+  max-height: 125px;
+}
+
+.section__outerwrapper {
+  flex-direction: column;
+  width: 80em;
+}

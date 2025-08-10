@@ -17,8 +17,9 @@ import { encoder } from 'https://deno.land/std@0.65.0/encoding/utf8.ts';
 import { startDinoAnimation } from "./utils/dino.ts";
 import { runBenches } from './utils/performance-test.ts';
 import { transformHTML } from "./transformHTML.ts";
+import { timings, BuildTimings } from './utils/timingTracker.ts';
 
-const { stopAnimation, updateStatus } = startDinoAnimation(false);
+// const { stopAnimation, updateStatus } = startDinoAnimation(false);
 let currentWatcher: Deno.FsWatcher | null = null;
 //defs
 interface Server {
@@ -53,7 +54,16 @@ async function findAvailablePort(startPort: number): Promise<number> {
   }
 }
 
+function cleanupSocket(socket: WebSocket) {
+  if (wss.has(socket)) {
+    wss.delete(socket);
+    console.log("WebSocket disconnected");
+  }
+}
+
 async function mirrorDirectoryStructure(sourcePath: string, targetPath: string): Promise<void>  {
+  const start = performance.now();
+  await Deno.mkdir("./assets").catch(() => {});
   try {
     // lets check if dir is there. 
     await Deno.mkdir(targetPath, { recursive: true });
@@ -79,31 +89,62 @@ async function mirrorDirectoryStructure(sourcePath: string, targetPath: string):
 
 
 async function build(changedFiles: Set<string> | null = null) {
+  const start = performance.now();
+  Object.keys(timings).forEach(key => delete (timings as any)[key]);
+
   await mirrorDirectoryStructure(srcPath, distPath);
-  
+
   try {
-    // updateStatus("🔧 building dist HTML...");
-    await transformHTML( changedFiles);
-    updateStatus("HTML");
+    const changed = changedFiles
+      ? [...changedFiles].map(p => p.toLowerCase())
+      : null;
 
-    // updateStatus("⚙️  transpiling dist TypeScript...");
-    await transformTS(changedFiles);
-    updateStatus("JS");
+    const tasks: Promise<void>[] = [];
 
-    // updateStatus("🎨 compiling dist SCSS...");
-    await transformSCSS(changedFiles);
-    updateStatus("CSS");
+    if (!changed || changed.some(p => p.endsWith(".html") || p.endsWith(".htm"))) {
+      tasks.push(transformHTML(changedFiles));
+    }
 
-    // updateStatus("📦 processing dist Assets...");
-    await transformAssets(changedFiles);
-    updateStatus("assets");
+    if (!changed || changed.some(p => p.endsWith(".ts") || p.endsWith(".tsx") || p.endsWith(".js"))) {
+      tasks.push(transformTS(changedFiles));
+    }
 
-    stopAnimation();
+    if (!changed || changed.some(p => p.endsWith(".scss") || p.endsWith(".sass") || p.endsWith(".css"))) {
+      tasks.push(transformSCSS(changedFiles));
+    }
+
+    if (!changed || changed.some(p => /\.(png|jpe?g|svg|gif|webp|mp4|woff2?|ttf|ico|json|txt)$/.test(p))) {
+      tasks.push(transformAssets(changedFiles));
+    }
+
+    await Promise.all(tasks);
+
   } catch (error) {
-    stopAnimation();
     console.error("❌ error during dist build process:", error);
+  } finally {
+    const end = performance.now();
+    timings.total = Math.round(end - start);
+
+    const colorizeValue = (value: number | undefined): string => {
+      if (value === undefined) return '-';
+      const roundedValue = Math.round(value);
+      if (value < 2000) return `\x1B[32m${roundedValue}ms\x1B[0m`; // < 2s = green
+      if (value <= 5000) return `\x1B[38;5;208m${roundedValue}ms\x1B[0m`; // 2–5s = orange
+      return `\x1B[31m${roundedValue}ms\x1B[0m`; // > 5s = red
+    };
+
+    console.log(
+      `\x1B[38;5;172mhtml\x1B[0m = ${colorizeValue(timings.html)} | ` +
+      `\x1B[38;5;68mts\x1B[0m = ${colorizeValue(timings.ts)} | ` +
+      `\x1B[38;5;218mscss\x1B[0m = ${colorizeValue(timings.scss)} | ` +
+      `\x1B[95massets\x1B[0m = ${colorizeValue(timings.assets)} | ` +
+      `total = ${colorizeValue(timings.total)}`
+    );
   }
 }
+
+
+
 
 
 const debouncedBuild = debounce(async (changedFiles: Set<string>) => {
@@ -111,7 +152,7 @@ const debouncedBuild = debounce(async (changedFiles: Set<string>) => {
   await build(changedFiles);
   wss.forEach(ws => {
     if (ws.readyState === WebSocket.OPEN) {
-      ws.send("reload");
+      setTimeout(() => ws.send("reload"), 100); // buffer so reload wont happen too quickly
     }
   });
 }, 300);
@@ -140,16 +181,18 @@ async function createServer() : Promise<void> {
       
       const { socket, response } = Deno.upgradeWebSocket(req);
       socket.onopen = () => {
+        (socket as any).id = crypto.randomUUID();
         wss.add(socket);
-        console.log("WebSocket connected");
+        console.log(`WebSocket #${(socket as any).id} connected`);
+        console.log(`Total WebSockets: ${wss.size}`);
       };
-      socket.onclose = () => {
-        wss.delete(socket);
-        console.log("WebSocket disconnected");
+      socket.onclose = (event) => {
+        console.log(`Socket closed: code=${event.code}, reason=${event.reason}`);
+        cleanupSocket(socket);
       };
       socket.onerror = (error) => {
-        console.error("WebSocket error:", error);
-        wss.delete(socket);
+        console.error(`Error on WebSocket #${(socket as any).id}`, error);
+        cleanupSocket(socket);
       };
       return response;
     }
@@ -166,53 +209,13 @@ async function createServer() : Promise<void> {
     }
   });
   setTimeout(() => {
-    console.log(`Dinos have landed.🐱‍🐉 http://localhost:${availablePort}`);
+    console.log(`Dinos have landed.🌴🦕 \x1B[92mhttp://localhost:${availablePort}\x1B[0m`);
   }, 50);
+  setTimeout(() => {
+  const { stopAnimation } = startDinoAnimation();
+  }, 100);
 }
 
-
-// async function startWatching() {
-//   // clean up watch. if it already exists. swapped instead of truthy/falsy, just looking for a watcher to exist. 
-//   if (currentWatcher) {
-//     try {
-//       currentWatcher.close();
-//     } catch (e) {
-//       console.error("Error closing watcher:", e);
-//     }
-//   }
-
-//   // new watcher
-//   // added timer, clear timer, call back watching func,trying to group it into a set buff, so we can group the items. add pending changes to buff
-//   currentWatcher = Deno.watchFs(["src"], { recursive: true });
-//   console.log("Started watching for changes in src directory...");
-//   const pendingChanges = new Set<string>();
-//   let debounceTimer: number | null = null;
-
-//   for await (const event of currentWatcher) {
-//     event.paths.forEach(path => pendingChanges.add(resolve(path))); // changed , normalize paths
-//     if (debounceTimer !== null) {
-//       clearTimeout(debounceTimer);
-//     }
-
-//     debounceTimer = setTimeout(async () => {
-//       if (pendingChanges.size > 0) {
-//         console.log("Change detected:" + `${event.kind}`);
-//         await debouncedBuild(pendingChanges);
-//         wss.forEach(ws => {
-//           if (ws.readyState === WebSocket.OPEN) {
-//             ws.send("reload");
-//           }
-//         });
-//         pendingChanges.clear();
-//         await startWatching();
-//         return; 
-//       }
-//     }, 100); 
-//   }
-// }
-// added timer, clear timer, call back watching func,trying to group it into a set buff, so we can group the items. add pending changes to buff
-// clean up watch. if it already exists. swapped instead of truthy/falsy, just looking for a watcher to exist. 
-// changed , got rid of one recursive call, was redundant and causing duplicates. 
 async function startWatching() {
   if (currentWatcher) {
     try {
@@ -222,12 +225,11 @@ async function startWatching() {
     }
   }
 
-  currentWatcher = Deno.watchFs(["src"], { recursive: true });
-  console.log("Started watching for changes in src directory...");
+  currentWatcher = Deno.watchFs(["src", "utils", "assets"], { recursive: true });
+  console.log("Watching src, utils, assets...");
   const pendingChanges = new Set<string>();
 
   for await (const event of currentWatcher) {
-    // console.log("Raw event paths:", event.paths);
     event.paths.forEach(path => {
       const resolvedPath = resolve(path);
       console.log(`Adding path to pendingChanges: ${resolvedPath}`);
@@ -238,29 +240,23 @@ async function startWatching() {
     // Pass a copy of pendingChanges to debouncedBuild
     const changesToProcess = new Set(pendingChanges);
     debouncedBuild(changesToProcess);
+    pendingChanges.clear();
     // Do not clear pendingChanges here; let it accumulate
   }
 }
 
+// graceful shutdown
+addEventListener("SIGINT", async () => {
+  console.log("\nShutting down...");
+  currentWatcher?.close();
+  wss.forEach(ws => ws.close(1001, "Server shutting down"));
+  Deno.exit();
+});
+
 async function main(): Promise<void> {
   await build();
   await createServer();
-  console.log("Watching for changes in src directory...");
   await startWatching();
-  // await runBenches().catch((err) => console.error("Error:", err));
-  //working watcher. old tho
-  // const watcher = Deno.watchFs(["src"], { recursive: true });
-
-  // for await (const event of watcher) {
-  //   console.log(`Change detected: ${event.kind}`, event.paths);
-  //   const changedFiles = new Set<string>(event.paths);
-  //   await debouncedBuild(changedFiles);
-  //   wss.forEach(ws => {
-  //     if (ws.readyState === WebSocket.OPEN) {
-  //       ws.send("reload");
-  //     }
-  //   });
-  // }
 }
 
 main().catch(console.error);
