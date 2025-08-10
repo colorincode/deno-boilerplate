@@ -184,7 +184,7 @@ async function optimizeVideo(srcPath: string, destPath: string, highCompression 
 
 // Initial sync and optimization of videos
 async function initialVideoSync(srcDir: string, destDir: string, highCompression = false) {
-  console.log("Performing initial video sync...");
+  // console.log("Performing initial video sync...");
   await Deno.mkdir(destDir, { recursive: true });
 
   const tasks: Promise<void>[] = [];
@@ -193,7 +193,7 @@ async function initialVideoSync(srcDir: string, destDir: string, highCompression
       const relPath = relative(srcDir, entry.path);
       const destPath = join(destDir, relPath.replace(extname(relPath), ".mp4")); // output to mp4, ??
       if (await isOutputCurrent(entry.path, destPath)) {
-        console.log(`Skipping ${relPath} (already processed)`);
+        // console.log(`Skipping ${relPath} (already processed)`);
         continue;
       }
       tasks.push(optimizeVideo(entry.path, destPath, highCompression));
@@ -206,7 +206,7 @@ async function initialVideoSync(srcDir: string, destDir: string, highCompression
     await Promise.all(tasks.slice(i, i + 2));
   }
 
-  console.log("Initial video sync completed.");
+  // console.log("Initial video sync completed.");
 }
 
 // optimize vidya

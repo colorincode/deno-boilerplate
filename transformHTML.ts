@@ -3,6 +3,7 @@ import { walk } from "https://deno.land/std@0.224.0/fs/mod.ts";
 import { resolve, join, relative, dirname } from "https://deno.land/std@0.224.0/path/mod.ts";
 import posthtml from "npm:posthtml";
 import include from "npm:posthtml-include";
+import { timings } from './utils/timingTracker.ts';
 
 const srcPath = "./src";
 let distPath = "./dist";
@@ -19,7 +20,7 @@ async function getAllHTMLFiles(srcPath: string): Promise<string[]> {
   } catch (err) {
     console.error("Error getting all HTML files:", err);
   }
-  console.log("getAllHTMLFiles found:", files);
+  // console.log("getAllHTMLFiles found:", files);
   return files;
 }
 
@@ -69,36 +70,6 @@ async function buildHTMLDependencyMap(srcPath: string, changedFiles: Set<string>
     // console.log("Dependency map built:", [...htmlDependencyMap.entries()]);
   }
 
-// async function buildHTMLDependencyMap(srcPath: string) {
-//   htmlDependencyMap.clear(); // Clear to support rebuilding map
-//   try {
-//     for await (const entry of walk(srcPath, { exts: [".html"] })) {
-//       const file = entry.path;
-//       let content = "";
-//       try {
-//         content = await Deno.readTextFile(file);
-//       } catch (err) {
-//         console.error(`Error reading file ${file}:`, err);
-//         continue;
-//       }
-//       const includeRegex = /<include\s+src=["'](.+?)["']/gi;
-//       let match;
-//       while ((match = includeRegex.exec(content)) !== null) {
-//         const includePath = resolve(srcPath, match[1]);
-//         if (!htmlDependencyMap.has(includePath)) {
-//           htmlDependencyMap.set(includePath, new Set());
-//         }
-//         htmlDependencyMap.get(includePath)!.add(resolve(file));
-//         console.log(`Mapping dependency: ${includePath} -> ${file}`);
-//       }
-//     }
-//   } catch (err) {
-//     console.error("Error building HTML dependency map:", err);
-//   }
-//   depMapBuilt = true;
-//   console.log("Dependency map built:", [...htmlDependencyMap.entries()]);
-// }
-
 // changed, added this function to get a partials object, then return it. because it is not reading the partials as a group. 
 async function getIncludedPartials(file: string, visited: Set<string> = new Set()): Promise<Set<string>> {
     const partials = new Set<string>();
@@ -128,6 +99,8 @@ async function getIncludedPartials(file: string, visited: Set<string> = new Set(
 
 
 export async function transformHTML( changedFiles: Set<string> | null = null, isProd: boolean = false ) {
+  const start = performance.now();
+
     distPath = isProd ? "./prod" : "./dist";
     //slight change to normalize , changed
     const normalizedChangedFiles = changedFiles
@@ -175,7 +148,7 @@ export async function transformHTML( changedFiles: Set<string> | null = null, is
     // }
 
     const filesToProcess = changedFiles ? [...filesToRebuild] : await getAllHTMLFiles(srcPath);
-    console.log("Files to process:", filesToProcess);
+    // console.log("Files to process:", filesToProcess);
 
     for (const srcFile of filesToProcess) {
     // changed , skip partial since it is included in posthtml func already (? might be overkill)
@@ -212,7 +185,7 @@ export async function transformHTML( changedFiles: Set<string> | null = null, is
     })());
 
     if (!shouldCopy) {
-      console.log(`Skipping ${srcFile} does not need copy.`);
+      // console.log(`Skipping ${srcFile} does not need copy.`);
       continue;
     }
 
@@ -289,9 +262,11 @@ export async function transformHTML( changedFiles: Set<string> | null = null, is
 
     try {
       await Deno.writeTextFile(distFile, transformedContent);
-      console.log(`Processed and copied ${srcFile} to ${distFile}`);
+      // console.log(`Processed and copied ${srcFile} to ${distFile}`);
     } catch (err) {
       console.error(`Error writing file ${distFile}:`, err);
     }
   }
+  const end = performance.now();
+  timings.html = Math.round(end - start);
 }

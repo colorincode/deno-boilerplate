@@ -2,11 +2,12 @@ import { ensureDir, walk, ensureDirSync, walkSync } from "https://deno.land/std@
 import { join, basename, relative, dirname } from "https://deno.land/std@0.224.0/path/mod.ts";
 import * as sass from "npm:sass";
 import postcss from "npm:postcss";
-import postcssImport from "npm:postcss-import";
+// import postcssImport from "npm:postcss-import";
 import autoprefixer from "npm:autoprefixer"; // Add autoprefixer
-import postcssUtilities from "npm:postcss-utilities"; // Add postcss-utilities
+// import postcssUtilities from "npm:postcss-utilities"; // Add postcss-utilities
 import { transform, browserslistToTargets, Features } from 'lightningcss';
 import { debounce } from "https://deno.land/std@0.224.0/async/debounce.ts";
+import { timings } from './utils/timingTracker.ts';
 
 const processedFiles = new Set<string>();
 
@@ -22,7 +23,7 @@ async function processFile(file: string, srcPath: string, distPath: string, isPr
 
     if (file.endsWith(".scss")) {
       const result = await sass.compileAsync(file, {
-        style: "expanded",
+        // style: "expanded",
         loadPaths: [dirname(file), './src/scss'],
       });
       cssContent = result.css;
@@ -31,11 +32,11 @@ async function processFile(file: string, srcPath: string, distPath: string, isPr
     }
     //with plugins
     const postCssResult = await postcss([
-      postcssImport(),
-      postcssUtilities({
-        clearfix: true, // Example utility
-        center: true,   // Example utility
-      }),
+      // postcssImport(),
+      // postcssUtilities({
+      //   clearfix: true, // Example utility
+      //   center: true,   // Example utility
+      // }),
       autoprefixer({
         overrideBrowserslist: ["last 2 versions", "> 1%"],
       }),
@@ -65,6 +66,8 @@ async function processFile(file: string, srcPath: string, distPath: string, isPr
 }
 
 export async function transformSCSS(changedFiles: Set<string> | null = null, isProd: boolean = false): Promise<void> {
+  const start = performance.now();
+
   const srcPath = "./src/scss";
   const distPath = isProd ? "./prod/css" : "./dist/css";
   
@@ -95,7 +98,8 @@ export async function transformSCSS(changedFiles: Set<string> | null = null, isP
     await Promise.all(processPromises);
   }
   
-  // console.log("SCSS to CSS conversion completed 🦖");
-}
+  const end = performance.now();
+  timings.scss = Math.round(end - start);
 
+}
 

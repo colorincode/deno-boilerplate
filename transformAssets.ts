@@ -6,6 +6,7 @@ import "./utils/processVideo_utils.ts"
 import { transformVideos } from './utils/processVideo_utils.ts'
 // import { toBytes } from "https://deno.land/std/streams/conversion.ts";
 import sharp from "npm:sharp";
+import { timings } from './utils/timingTracker.ts';
 
 
 // Utility to check if a path is an image
@@ -32,7 +33,7 @@ async function optimizeImage(inputPath: string, outputPath: string) {
     case ".png":
       image = image.png({ compressionLevel: 9 });
       break;
-    case ".webP":
+    case ".webp":
       image = image.webp({ quality: 80 });
       break;
     case ".avif":
@@ -94,6 +95,8 @@ function debounce(fn: (...args: any[]) => void, delay: number) {
 
 // Main watcher logic
 export async function transformAssets(changedFiles: Set<string> | null = null, isProd: boolean = false) {
+  const start = performance.now();
+
   const srcDir = "./assets";
   const destDir = isProd ? "./prod/assets" : "./dist/assets";
 
@@ -108,6 +111,11 @@ export async function transformAssets(changedFiles: Set<string> | null = null, i
   }
   
   await transformVideos();
+
+  const end = performance.now();
+  timings.assets = Math.round(end - start);
+  // const duration = (end - start).toFixed(2);
+  // console.log(`assets complete in: ${duration}ms`)
 }
 
 // Run the watcher

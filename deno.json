@@ -1,6 +1,6 @@
 {
-  "version": "0.0.1",
-  "description": "General boilerplate library for deno from Color in Code",
+  "version": "0.0.2",
+  "description": "General boilerplate library for deno from Color in Code: Johnny's Version \\<3",
   "author": "Color in Code <(colorincodeme@gmail.com)>",
   "homepage": "https://github.com/colorincode/deno",
   "tasks": {
@@ -13,39 +13,50 @@
 },
 "nodeModulesDir": "auto",
   "imports": {
+    "@awesome.me/kit-e56bb8c3d5": "npm:@awesome.me/kit-e56bb8c3d5@^1.0.6",
     "@biomejs/biome": "npm:@biomejs/biome@^1.9.4",
+    "@typeform/embed": "npm:@typeform/embed@^5.5.0",
     "autoprefixer": "npm:autoprefixer@^10.4.21",
-    "browserslist": "npm:browserslist",
+    "browserslist": "npm:browserslist@4.24.5",
     "@oak/oak": "jsr:@oak/oak@^17.1.4",
-    "@std/fmt": "jsr:@std/fmt@1",
-    "@std/fs": "jsr:@std/fs@^1.0.15",
-    "@std/dotenv": "jsr:@std/dotenv@0",
-    "@std/http": "jsr:@std/http@^1.0.13",
-    "@std/path": "jsr:@std/path@1",
-    "@std/assert": "jsr:@std/assert@^1.0.12",
-    "@std/cli": "jsr:@std/cli@^1.0.15",
-    "@std/jsonc": "jsr:@std/jsonc@1",
+    "@std/fmt": "jsr:@std/fmt@^1.0.8",
+    "@std/fs": "jsr:@std/fs@^1.0.17",
+    "@std/dotenv": "jsr:@std/dotenv@^0.225.5",
+    "@std/http": "jsr:@std/http@^1.0.17",
+    "@std/path": "jsr:@std/path@^1.1.0",
+    "@std/assert": "jsr:@std/assert@^1.0.13",
+    "@std/cli": "jsr:@std/cli@^1.0.18",
+    "@std/jsonc": "jsr:@std/jsonc@^1.0.2",
     "@std/net": "jsr:@std/net@1",
-    "@std/testing": "jsr:@std/testing@^1.0.10",
-    "@trpc/client": "npm:@trpc/client@^11.0.0",
-    "@trpc/server": "npm:@trpc/server@^11.0.0",
-    "esbuild": "npm:esbuild@^0.25.1",
-    "gsap": "npm:gsap@^3.12.7",
-    "lighthouse": "npm:lighthouse@^12.5.1",
-    "lightningcss": "npm:lightningcss@^1.29.3",
-    "postcss": "npm:postcss@^8.5.3",
+    "@std/testing": "jsr:@std/testing@^1.0.13",
+    "@trpc/client": "npm:@trpc/client@^11.1.4",
+    "@trpc/server": "npm:@trpc/server@^11.1.4",
+    "esbuild": "npm:esbuild@^0.25.5",
+    "fontawesome": "npm:fontawesome@^5.6.3",
+    "gsap": "npm:gsap@^3.13.0",
+    "lighthouse": "npm:lighthouse@^12.6.0",
+    "lightningcss": "npm:lightningcss@^1.30.1",
+    "postcss": "npm:postcss@^8.5.4",
+    "postcss-custom-media": "npm:postcss-custom-media@^11.0.6",
     "postcss-import": "npm:postcss-import@^16.1.0",
     "postcss-loader": "npm:postcss-loader@^8.1.1",
     "postcss-utilities": "npm:postcss-utilities@^0.8.4",
     "posthtml": "npm:posthtml@^0.16.6",
     "posthtml-include": "npm:posthtml-include@^2.0.1",
-    "sass": "npm:sass@^1.86.0",
+    "reveal.js": "npm:reveal.js@^5.2.1",
+    "sass": "npm:sass@^1.89.0",
+    "sass-migrator": "npm:sass-migrator@^2.3.1",
     "sharp": "npm:sharp@^0.33.5",
-    "zod": "npm:zod@^3.24.2"
+    "@splidejs/splide": "npm:@splidejs/splide@^4.1.4",
+    "@splidejs/splide-extension-intersection": "npm:@splidejs/splide-extension-intersection@^0.2.0",
+    "@splidejs/splide-extension-url-hash": "npm:@splidejs/splide-extension-url-hash@^0.3.0",
+    "@splidejs/splide-extension-video": "npm:@splidejs/splide-extension-video@^0.8.0",
+    "three": "npm:three@^0.175.0",
+    "zod": "npm:zod@^3.25.36"
   },
-  "lint": {
-    "enabled": false
-  },
+"lint": {
+  "mode": "none"
+},
   "unstable": [
     "kv",
     "net",
@@ -78,10 +89,11 @@
       "exactOptionalPropertyTypes": true,
       
       "lib": [
+        "dom",
+        "dom.asynciterable",
+        "dom.iterable",
         "esnext",
-        "deno.window",
-        "deno.ns",
-        "deno.unstable"
+        "deno.window"
       ]
     },
     "devDependencies": {
