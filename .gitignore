@@ -5,6 +5,7 @@
 *.swp
 .env
 assets/
+.assetcache.json
 working-files/
 workingfiles/
 dist/

@@ -87,7 +87,6 @@ async function mirrorDirectoryStructure(sourcePath: string, targetPath: string):
   }
 }
 
-
 async function build(changedFiles: Set<string> | null = null) {
   const start = performance.now();
   Object.keys(timings).forEach(key => delete (timings as any)[key]);
@@ -128,9 +127,9 @@ async function build(changedFiles: Set<string> | null = null) {
     const colorizeValue = (value: number | undefined): string => {
       if (value === undefined) return '-';
       const roundedValue = Math.round(value);
-      if (value < 2000) return `\x1B[32m${roundedValue}ms\x1B[0m`; // < 2s = green
-      if (value <= 5000) return `\x1B[38;5;208m${roundedValue}ms\x1B[0m`; // 2–5s = orange
-      return `\x1B[31m${roundedValue}ms\x1B[0m`; // > 5s = red
+      if (value < 5000) return `\x1B[32m${roundedValue}ms\x1B[0m`; // < 2s = green
+      if (value <= 10000) return `\x1B[38;5;208m${roundedValue}ms\x1B[0m`; // 5-10s = orange
+      return `\x1B[31m${roundedValue}ms\x1B[0m`; // > 10s = red
     };
 
     console.log(
@@ -148,7 +147,7 @@ async function build(changedFiles: Set<string> | null = null) {
 
 
 const debouncedBuild = debounce(async (changedFiles: Set<string>) => {
-  console.log("Debounced build triggered with changes:", Array.from(changedFiles));
+  // console.log("Debounced build triggered with changes:", Array.from(changedFiles));
   await build(changedFiles);
   wss.forEach(ws => {
     if (ws.readyState === WebSocket.OPEN) {
@@ -191,7 +190,7 @@ async function createServer() : Promise<void> {
         cleanupSocket(socket);
       };
       socket.onerror = (error) => {
-        console.error(`Error on WebSocket #${(socket as any).id}`, error);
+        console.error(`Error on WebSocket #${socket.id}`, error);
         cleanupSocket(socket);
       };
       return response;
@@ -232,7 +231,7 @@ async function startWatching() {
   for await (const event of currentWatcher) {
     event.paths.forEach(path => {
       const resolvedPath = resolve(path);
-      console.log(`Adding path to pendingChanges: ${resolvedPath}`);
+      // console.log(`Adding path to pendingChanges: ${resolvedPath}`);
       pendingChanges.add(resolvedPath);
     });
 

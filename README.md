@@ -119,9 +119,16 @@ Generally you want to separate concerns and nest your components inside the TS a
 - Added in basic deno workflow task to github (may need additional config)
 - Tweaked dino animation
 - Improved initial and subsequent build times
+- Improved workflow for dev.ts, improved compile times for transforming files and assets
 
 ## Rough Roadmap/TODO:
 
-- Change the linting to ESLINT or something other than biome
-- Add in speed and performance enhancements to build
-- Add in a deno CI workflow 
+- Add back in new linter , adjust minification (if needed) for TS/SCSS, one for production and one for src code. 
+- Add in concurrency pool / memory allocation 
+- Transform assets with streams API and piped streams
+- improve processImage_utils and processVideo_utils
+- add upgrade to websocket so it fails less
+- deno cron jobs and subprocess running files (by spawning/subprocess output)
+- hashing , base64 encoding
+- add gzipped to prod builds
+- add tests 
