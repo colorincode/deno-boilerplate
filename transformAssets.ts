@@ -211,7 +211,7 @@ export async function transformAssets(changedFiles: Set<string> | null = null, i
     });
   }
 
-  await transformVideos();
+  await transformVideos(changedFiles, { isProd });
   await cleanStaleFiles(srcDir, destDir, cache);
   await saveCache(cache);
 

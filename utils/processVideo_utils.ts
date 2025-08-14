@@ -98,25 +98,17 @@ async function initialVideoSync(srcDir: string, destDir: string, highCompression
 }
 
 // optimize vidya
-async function processVideoEvent(srcPath: string, destBase: string, highCompression = false) {
-  if (!isVideo(srcPath)) return;
-  const relPath = relative("./assets/videos", srcPath);
-  const destPath = join(destBase, relPath.replace(extname(relPath), ".mp4"));
-  if (await isOutputCurrent(srcPath, destPath)) return;
-  await optimizeVideo(srcPath, destPath, highCompression);
-}
-
-// Main transform function
 export async function transformVideos(
   changedFiles: Set<string> | null = null,
-  options: { highCompression?: boolean } = {},
+  options: { highCompression?: boolean; isProd?: boolean } = {},
 ) {
   const srcDir = "./assets/videos";
-  const destDir = "./dist/assets/videos";
+  const destDir = options.isProd ? "./prod/assets/videos" : "./dist/assets/videos";
   const { highCompression = false } = options;
 
   try {
-    await Deno.stat(srcDir); // want to skip over dir if it is not there. 
+    await Deno.stat(srcDir); // Check if videos directory exists
+    await Deno.mkdir(destDir, { recursive: true }); // Ensure destDir exists
   } catch {
     console.log("No videos directory found, skipping video processing.");
     return;
@@ -130,8 +122,40 @@ export async function transformVideos(
     await initialVideoSync(srcDir, destDir, highCompression);
   }
 }
+async function processVideoEvent(srcPath: string, destBase: string, highCompression = false) {
+  if (!isVideo(srcPath)) return;
+  const relPath = relative("./assets/videos", srcPath);
+  const destPath = join(destBase, relPath.replace(extname(relPath), ".mp4"));
+  if (await isOutputCurrent(srcPath, destPath)) return;
+  await optimizeVideo(srcPath, destPath, highCompression);
+}
 
-// for testing
-// if (import.meta.main) {
-//   transformVideos().catch(console.error);
+// // Main transform function
+// export async function transformVideos(
+//   changedFiles: Set<string> | null = null,
+//   options: { highCompression?: boolean } = {},
+// ) {
+//   const srcDir = "./assets/videos";
+//   const destDir = "./prod/assets/videos";
+//   const { highCompression = false } = options;
+
+//   try {
+//     await Deno.stat(srcDir); // want to skip over dir if it is not there. 
+//   } catch {
+//     console.log("No videos directory found, skipping video processing.");
+//     return;
+//   }
+
+//   if (changedFiles) {
+//     for (const file of changedFiles) {
+//       await processVideoEvent(file, destDir, highCompression);
+//     }
+//   } else {
+//     await initialVideoSync(srcDir, destDir, highCompression);
+//   }
 // }
+
+// // for testing
+// // if (import.meta.main) {
+// //   transformVideos().catch(console.error);
+// // }
